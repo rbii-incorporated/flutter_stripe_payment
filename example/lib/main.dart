@@ -15,33 +15,49 @@ class _MyAppState extends State<MyApp> {
   @override
   initState() {
     super.initState();
-
     StripeSource.setPublishableKey("pk_test");
+    StripeSource.setMerchantIdentifier("merchant.rbii.stripe-example");
   }
+
+  Widget get _sourceAddButton {
+
+    return Padding(padding: EdgeInsets.all(10), child: RaisedButton(
+        padding: EdgeInsets.all(10),
+        child: Text("Add Card"),
+        onPressed: () {
+          print("Source Add Ready: ${StripeSource.ready}");
+          StripeSource.addSource().then((String token) {
+            _printToken(token);
+          });
+        }
+    ));
+  }
+
+  Widget get _nativePayButton {
+    return Padding(padding: EdgeInsets.all(10), child: RaisedButton(
+        child: Text("Pay w/ Native"),
+        onPressed: () {
+          print("Native Pay Ready: ${StripeSource.nativePayReady}");
+          StripeSource.useNativePay().then((token) => _printToken(token));
+        }
+    ));
+  }
+
+  Widget get _buttonColumn => Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.stretch, children: <Widget>[_sourceAddButton, _nativePayButton]);
 
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
       home: new Scaffold(
         appBar: new AppBar(
-          title: new Text('Plugin example app'),
+          title: new Text('Stripe Plugin Example'),
         ),
-        body: new Center(
-          child: RaisedButton(
-            child: Text("Add Card"),
-            onPressed: () {
-              print("Ready: ${StripeSource.ready}");
-              StripeSource.addSource().then((String token) {
-                _addSource(token);
-              });
-            },
-          ),
-        ),
+        body: _buttonColumn
       ),
     );
   }
 
-  void _addSource(String token) {
+  void _printToken(String token) {
     print("Token => $token");
   }
 }

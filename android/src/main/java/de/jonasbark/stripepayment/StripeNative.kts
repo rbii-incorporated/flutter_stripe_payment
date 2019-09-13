@@ -14,14 +14,22 @@ import com.stripe.android.view.CardMultilineWidget
 import java.lang.Exception
 
 
-class StripeDialog : androidx.fragment.app.DialogFragment() {
+class StripeNative : androidx.fragment.app.DialogFragment() {
+
+    var nativePaymentClient: PaymentClient?;
 
     companion object {
-        fun newInstance(title: String, publishableKey: String): StripeDialog {
-            val frag = StripeDialog()
+        fun newInstance(title: String, identifier: String): StripeNative {
+            val frag = StripeNative()
             val args = Bundle()
+            nativePaymentClient = Wallet.getPaymentsClient(
+                    this,
+                    Wallet.WalletOptions.Builder()
+                            .setEnvironment(WalletConstants.ENVIRONMENT_TEST)
+                            .build()
+            )
             args.putString("title", title)
-            args.putString("publishableKey", publishableKey)
+            args.putString("Identifier", identifier)
             frag.arguments = args
             return frag
         }
@@ -29,8 +37,8 @@ class StripeDialog : androidx.fragment.app.DialogFragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+            inflater: LayoutInflater, container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.activity_stripe, container)
     }
@@ -39,7 +47,7 @@ class StripeDialog : androidx.fragment.app.DialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         // Get field from view
         // Fetch arguments from bundle and set title
-        val title = arguments?.getString("title", "Add Source")
+        val title = arguments?.getString("title", "Identifier")
         dialog.setTitle(title)
 
         view.findViewById<View>(R.id.buttonSave)?.setOnClickListener {
@@ -59,7 +67,7 @@ class StripeDialog : androidx.fragment.app.DialogFragment() {
 
     private fun getToken() {
         val mCardInputWidget =
-            view?.findViewById<View>(R.id.card_input_widget) as CardMultilineWidget
+                view?.findViewById<View>(R.id.card_input_widget) as CardMultilineWidget
 
         if (mCardInputWidget.validateAllFields()) {
 
@@ -73,41 +81,41 @@ class StripeDialog : androidx.fragment.app.DialogFragment() {
 
                 val paymentMethodParamsCard = card.toPaymentMethodParamsCard()
                 val paymentMethodCreateParams = PaymentMethodCreateParams.create(
-                    paymentMethodParamsCard,
-                    PaymentMethod.BillingDetails.Builder().build()
+                        paymentMethodParamsCard,
+                        PaymentMethod.BillingDetails.Builder().build()
                 )
 
                 val stripe = Stripe(activity!!, PaymentConfiguration.getInstance().publishableKey)
 
                 stripe.createPaymentMethod(
-                    paymentMethodCreateParams,
-                    object : ApiResultCallback<PaymentMethod> {
-                        override fun onSuccess(result: PaymentMethod) {
-                            view?.findViewById<View>(R.id.progress)?.visibility = View.GONE
-                            view?.findViewById<View>(R.id.buttonSave)?.visibility = View.GONE
+                        paymentMethodCreateParams,
+                        object : ApiResultCallback<PaymentMethod> {
+                            override fun onSuccess(result: PaymentMethod) {
+                                view?.findViewById<View>(R.id.progress)?.visibility = View.GONE
+                                view?.findViewById<View>(R.id.buttonSave)?.visibility = View.GONE
 
-                            if (result.id != null) {
-                                tokenListener?.invoke(result.id!!)
-                                dismiss()
+                                if (result.id != null) {
+                                    tokenListener?.invoke(result.id!!)
+                                    dismiss()
+                                }
                             }
-                        }
 
-                        override fun onError(error: Exception) {
-                            view?.findViewById<View>(R.id.progress)?.visibility = View.GONE
-                            view?.findViewById<View>(R.id.buttonSave)?.visibility = View.VISIBLE
-                            view?.let {
-                                Snackbar.make(it, error.localizedMessage, Snackbar.LENGTH_LONG)
-                                    .show()
+                            override fun onError(error: Exception) {
+                                view?.findViewById<View>(R.id.progress)?.visibility = View.GONE
+                                view?.findViewById<View>(R.id.buttonSave)?.visibility = View.VISIBLE
+                                view?.let {
+                                    Snackbar.make(it, error.localizedMessage, Snackbar.LENGTH_LONG)
+                                            .show()
+                                }
                             }
-                        }
 
-                    })
+                        })
 
             }
         } else {
             view?.let {
                 Snackbar.make(it, "The card info you entered is not correct", Snackbar.LENGTH_LONG)
-                    .show()
+                        .show()
             }
         }
 
